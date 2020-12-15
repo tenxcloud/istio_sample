@@ -1,0 +1,34 @@
+### 非加密网关
+1. 创建 httpbin 服务 
+k apply -f httpbin/httpbin.yaml
+
+2. 创建非加密网关 
+k apply -f train/security_gateway/gateway.yaml
+
+3. 将网关收到的请求路由到 httpbin 服务
+k apply -f train/security_gateway/vs-gateway.yaml
+
+4. 验证非加密访问
+curl -I -HHost:httpbin.example.com http://localhost/status/418
+
+
+### 加密网关
+1. 创建根证书和私钥：
+openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -subj '/O=exampleOrg/CN=example.com' -keyout example.com.key -out example.com.crt
+
+2. 创建证书签名请求和私钥：
+openssl req -out httpbin.example.com.csr -subj "/CN=httpbin.example.com/O=httpbinOrg" -nodes -newkey rsa:2048 -keyout httpbin.example.com.key 
+
+3. 创建证书（用根证书对证书签名请求签名）
+openssl x509 -req -days 365 -CA example.com.crt -CAkey example.com.key -set_serial 0 -in httpbin.example.com.csr -out httpbin.example.com.crt
+
+4. 创建 Secret
+k create -n istio-system secret tls httpbin-credential --key=httpbin.example.com.key --cert=httpbin.example.com.crt
+
+5. 更新网关为加密模式
+k apply -f train/security_gateway/gateway-tls.yaml
+
+6. 验证加密访问
+curl -HHost:httpbin.example.com \
+--resolve httpbin.example.com:443:127.0.0.1 \
+--cacert example.com.crt "https://httpbin.example.com:443/status/418"

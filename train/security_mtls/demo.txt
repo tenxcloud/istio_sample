@@ -1,0 +1,21 @@
+### mTLS
+1. 创建 httpbin 服务 
+k apply -f httpbin/httpbin.yaml
+
+2. 为 default 命名空间打开 mtls
+k apply -f train/security_mtls/mtls-default-ns.yaml
+
+3. 在 test 命令空间部署不带 sidecar 的 sleep
+k apply -f sleep/sleep.yaml -n test
+
+4. 验证从 sleep 访问 httpbin 失败
+k exec -it sleep-854565cb79-5cxzl -n test -- curl httpbin.default:8000/status/418
+curl: (56) Recv failure: Connection reset by peer
+command terminated with exit code 56
+
+5. 在 test 命令空间部署带 sidecar 的 sleep
+k delete -f sleep/sleep.yaml -n test
+k apply -f <(istioctl kube-inject -f sleep/sleep.yaml) -n test 
+
+6. 验证从 sleep 访问 httpbin 成功
+k exec -it sleep-7b94df8b9b-qv4hz -n test -- curl httpbin.default:8000/status/418

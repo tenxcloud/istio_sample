@@ -1,0 +1,24 @@
+1. 部署 httpbin 和 sleep
+k apply -f httpbin/httpbin.yaml
+k apply -f sleep/sleep.yaml
+
+2. 验证从 sleep 可以成功访问 httpbin
+k exec -it sleep-854565cb79-gcv77 -c sleep -- curl httpbin:8000/ip
+
+3. 创建请求认证
+k apply -f ra-jwt.yaml
+
+4. 创建授权策略
+k apply -f ap-jwt.yaml
+其中的 requestPrincipals 有 jwt token 的 iss/sub 拼接而成
+
+5. 测试不带 Token 访问被拒绝
+k exec -it sleep-854565cb79-gcv77 -c sleep -- curl httpbin:8000/ip
+
+6. 获取 Token 并解析查看其内容
+TOKEN=$(cat train/security_jwt/demo.jwt) && echo $TOKEN | cut -d '.' -f2 - | base64 --decode -
+{"exp":4685989700,"foo":"bar","iat":1532389700,"iss":"testing@secure.istio.io","sub":"testing@secure.istio.io"}
+
+7. 测试带 jwt token 访问成功
+k exec -it sleep-854565cb79-gcv77 -c sleep -- curl httpbin:8000/ip -H "Authorization: Bearer $TOKEN"
+

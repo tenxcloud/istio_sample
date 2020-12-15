@@ -1,0 +1,2 @@
+1. 安装fortio：
+kubectl apply -f httpbin/sample-client/fortio-deploy.yaml

@@ -1,0 +1,2 @@
+k apply -f httpbin/httpbin.yaml
+curl -I -HHost:httpbin.example.com http://localhost/status/200
